@@ -9,7 +9,6 @@ import (
   "fmt"
 )
 
-
 func main() {
   // http://colorschemedesigner.com/
   var colors = map[string]string{
@@ -49,9 +48,11 @@ func main() {
     for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
       for x := bounds.Min.X; x < bounds.Max.X; x++ {
         lab := rgbaToLab(m.At(x, y))
+        iLab := lab.inverse()
         nLab := lab.minDist(labs)
+        invNLab := iLab.minDist(labs)
         img.SetRGBA64(x, y, *nLab.toRGBA())
-        invImg.SetRGBA64(y, y, *nLab.inverse().toRGBA())
+        invImg.SetRGBA64(x, y, *invNLab.toRGBA())
       }
     }
 

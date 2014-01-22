@@ -12,6 +12,11 @@ type LAB struct {
   l, a, b float64
 }
 
+const (
+  // Max l value
+  maxL = float64(792537.7695198755)
+)
+
 func (lab *LAB) String() string {
   return fmt.Sprintf("(%f,%f,%f)", lab.l, lab.a, lab.b)
 }
@@ -34,7 +39,7 @@ func (lab *LAB) minDist(labs []*LAB) *LAB {
 }
 
 func (lab *LAB) inverse() *LAB {
-  return &LAB{l: 100.0 - lab.l, a: lab.a, b: lab.b}
+  return &LAB{l: maxL - lab.l, a: lab.a, b: lab.b}
 }
 
 func (lab *LAB) toRGBA() *color.RGBA64 {
