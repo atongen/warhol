@@ -43,41 +43,25 @@ func main() {
   for radius, hexes := range colors {
     labs := hexesToLabs(hexes)
 	  img := image.NewRGBA64(image.Rect(0, 0, bounds.Max.X, bounds.Max.Y))
-	  invImg := image.NewRGBA64(image.Rect(0, 0, bounds.Max.X, bounds.Max.Y))
 
     for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
       for x := bounds.Min.X; x < bounds.Max.X; x++ {
         lab := rgbaToLab(m.At(x, y))
-        iLab := lab.inverse()
         nLab := lab.minDist(labs)
-        invNLab := iLab.minDist(labs)
         img.SetRGBA64(x, y, *nLab.toRGBA())
-        invImg.SetRGBA64(x, y, *invNLab.toRGBA())
       }
     }
 
     names := strings.Split(os.Args[1], ".")
     outf := os.Args[2] + "/" + names[0] + "-" + radius + "." + names[1]
-    invOutf := os.Args[2] + "/" + names[0] + "-" + radius + "-inv." + names[1]
 
-    options := &jpeg.Options{Quality: 90}
-
-    // outf
     fmt.Println(outf)
     out, err := os.Create(outf)
     if err != nil {
       log.Fatal(err)
     }
     defer out.Close()
+    options := &jpeg.Options{Quality: 90}
     jpeg.Encode(out, img, options)
-
-    // invOutf
-    fmt.Println(invOutf)
-    invOut, err := os.Create(invOutf)
-    if err != nil {
-      log.Fatal(err)
-    }
-    defer invOut.Close()
-    jpeg.Encode(invOut, invImg, options)
   }
 }
