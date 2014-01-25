@@ -3,12 +3,11 @@ package main
 import (
 	"image"
 	"image/draw"
-	"image/jpeg"
 	"log"
-	"os"
-	"path"
-	"path/filepath"
 	"runtime"
+  "os"
+  "fmt"
+  "path"
 )
 
 var (
@@ -81,35 +80,6 @@ func setPlacement() {
 	placement["330"] = image.Rect(bounds.Max.X*2, bounds.Max.Y*2, bounds.Max.X*3, bounds.Max.Y*3)
 }
 
-func openImage(path string) (*image.Image, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	// Decode the image
-	img, _, err := image.Decode(file)
-	if err != nil {
-		return nil, err
-	}
-	return &img, nil
-}
-
-func writeImage(outf string, img *image.RGBA64) {
-	out, _ := os.Create(outf)
-	defer out.Close()
-	options := &jpeg.Options{Quality: 92}
-	jpeg.Encode(out, img, options)
-	//fmt.Println(outf)
-}
-
-func getImageFilename(indicator string) string {
-	extension := filepath.Ext(filename)
-	name := filename[0 : len(filename)-len(extension)]
-	return path.Join(outdir, name+"-"+indicator+extension)
-}
-
 func cleanUp() {
 	for _, path := range result {
 		if _, err := os.Stat(path); err == nil {
@@ -118,18 +88,48 @@ func cleanUp() {
 	}
 }
 
-// TODO: allow args to dictate 3x3 or 4x4
-//       reduce total number of colors used
+func parseArgs() {
+  wd, err := os.Getwd()
+  if len(os.Args) >= 2 {
+    filename = path.Join(wd, os.Args[1])
+    if err != nil {
+      usage(err)
+    }
+		if _, err := os.Stat(filename); err != nil {
+      usage(err)
+		}
+  } else {
+    usage(nil)
+  }
+  if len(os.Args) == 3 {
+    outdir = path.Join(wd, os.Args[2])
+    if err != nil {
+      usage(err)
+    }
+		if _, err := os.Stat(outdir); err != nil {
+      usage(err)
+		}
+  } else {
+    outdir = "."
+  }
+}
+
+func usage(err error) {
+  fmt.Println("$ warhol path/to/src/image.jpg [OUTDIR]")
+  if err != nil {
+    log.Fatal(err)
+  }
+}
+
 func main() {
+  parseArgs()
+
 	var err error
-	m, err = openImage(os.Args[1])
+	m, err = openImage(filename)
 	if err != nil {
-		log.Fatal(err)
+    usage(err)
 	}
 	bounds = (*m).Bounds()
-
-	filename = os.Args[1]
-	outdir = os.Args[2]
 
 	concurrency := runtime.NumCPU()
 	sem := make(chan bool, concurrency)
