@@ -1,6 +1,6 @@
 # warhol
 
-Create simple warhol-like images.
+Create simple warhol-like artworks from digital images.
 
 ## Installation
 
@@ -9,11 +9,6 @@ $ go get github.com/atongen/warhol
 ## Usage
 
 $ warhol path/to/src/image.jpg [OUTDIR]
-
-## TODO
-
-[ ] Allow args to dictate 3x3 or 2x2
-[ ] Reduce total number of colors used
 
 ## Contributing
 

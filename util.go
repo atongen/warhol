@@ -1,11 +1,11 @@
 package main
 
 import (
-  "image"
+	"image"
 	"image/jpeg"
+	"os"
 	"path"
 	"path/filepath"
-	"os"
 )
 
 func openImage(path string) (*image.Image, error) {
@@ -32,7 +32,7 @@ func writeImage(outf string, img *image.RGBA64) {
 }
 
 func getImageFilename(indicator string) string {
-  fn := path.Base(filename)
+	fn := path.Base(filename)
 	extension := filepath.Ext(fn)
 	name := fn[0 : len(fn)-len(extension)]
 	return path.Join(outdir, name+"-"+indicator+extension)
