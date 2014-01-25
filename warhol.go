@@ -7,14 +7,14 @@ import (
 	"runtime"
   "os"
   "fmt"
-  "path"
+  "path/filepath"
+  "flag"
+  "strconv"
 )
 
 var (
 	m        *image.Image
 	bounds   image.Rectangle
-	filename string
-	outdir   string
 	result   = map[string]string{}
 	// http://colorschemedesigner.com/
 	colors = map[string]string{
@@ -32,6 +32,11 @@ var (
 		"330": "CD0074,992667,85004B,E6399B,E667AF,00CC00,269926,008500,39E639,67E667,FFFF00,BFBF30,A6A600,FFFF40,FFFF73",
 	}
 	placement = map[string]image.Rectangle{}
+
+  // flags
+	filename string
+	outdir   string
+  size int
 )
 
 func writeWarholPartial(labs []*LAB, radius string) {
@@ -50,8 +55,7 @@ func writeWarholPartial(labs []*LAB, radius string) {
 }
 
 func writeWarhol() {
-	setPlacement()
-	img := image.NewRGBA64(image.Rect(0, 0, bounds.Max.X*3, bounds.Max.Y*3))
+	img := image.NewRGBA64(image.Rect(0, 0, bounds.Max.X*size, bounds.Max.Y*size))
 
 	for radius, rect := range placement {
 		sub, err := openImage(result[radius])
@@ -61,11 +65,29 @@ func writeWarhol() {
 		draw.Draw(img, rect, *sub, image.ZP, draw.Src)
 	}
 
-	outf := getImageFilename("warhol")
+	outf := getImageFilename("warhol" + strconv.Itoa(size))
 	writeImage(outf, img)
+  fmt.Println(outf)
 }
 
 func setPlacement() {
+  if size == 2 {
+    setPlacementTwo()
+  } else if size == 3 {
+    setPlacementThree()
+  }
+}
+
+func setPlacementTwo() {
+  // row 1
+  placement["000"] = image.Rect(0, 0, bounds.Max.X, bounds.Max.Y)
+  placement["090"] = image.Rect(bounds.Max.X, 0, bounds.Max.X*2, bounds.Max.Y)
+  // row 2
+  placement["180"] = image.Rect(0, bounds.Max.Y, bounds.Max.X, bounds.Max.Y*2)
+  placement["270"] = image.Rect(bounds.Max.X, bounds.Max.Y, bounds.Max.X*2, bounds.Max.Y*2)
+}
+
+func setPlacementThree() {
 	// row 1
 	placement["030"] = image.Rect(0, 0, bounds.Max.X, bounds.Max.Y)
 	placement["060"] = image.Rect(bounds.Max.X, 0, bounds.Max.X*2, bounds.Max.Y)
@@ -88,54 +110,63 @@ func cleanUp() {
 	}
 }
 
-func parseArgs() {
-  wd, err := os.Getwd()
-  if len(os.Args) >= 2 {
-    filename = path.Join(wd, os.Args[1])
-    if err != nil {
-      usage(err)
-    }
-		if _, err := os.Stat(filename); err != nil {
-      usage(err)
-		}
-  } else {
-    usage(nil)
+func processArgs() {
+  var err error
+  flag.Parse()
+
+  // filepath
+  if len(flag.Args()) != 1 {
+    usage()
   }
-  if len(os.Args) == 3 {
-    outdir = path.Join(wd, os.Args[2])
-    if err != nil {
-      usage(err)
-    }
-		if _, err := os.Stat(outdir); err != nil {
-      usage(err)
-		}
-  } else {
-    outdir = "."
+  filename, err = filepath.Abs(flag.Args()[0])
+  if err != nil {
+    usage()
+  }
+  filename = filepath.Clean(filename)
+
+  // outdir
+  outdir, err = filepath.Abs(outdir)
+  if err != nil {
+    usage()
+  }
+
+  // size
+  if size != 2 && size != 3 {
+    usage()
   }
 }
 
-func usage(err error) {
-  fmt.Println("$ warhol path/to/src/image.jpg [OUTDIR]")
-  if err != nil {
-    log.Fatal(err)
-  }
+func usage() {
+  fmt.Println("$ warhol [OPTIONS] path/to/image.jpg")
+  fmt.Println()
+  fmt.Println("Options:")
+  flag.PrintDefaults()
+  os.Exit(1)
+}
+
+func init() {
+  flag.StringVar(&outdir, "outdir", ".", "Output directory")
+  flag.StringVar(&outdir, "o", ".", "outdir (shorthand)")
+  flag.IntVar(&size, "size", 3, "Size of output grid, valid values are 3 (3x3) or 2 (2x2)")
+  flag.IntVar(&size, "s", 3, "size (shorthand)")
 }
 
 func main() {
-  parseArgs()
+  processArgs()
 
 	var err error
 	m, err = openImage(filename)
 	if err != nil {
-    usage(err)
+    log.Fatal(err)
 	}
 	bounds = (*m).Bounds()
+	setPlacement()
 
 	concurrency := runtime.NumCPU()
 	sem := make(chan bool, concurrency)
 
 	for radius, hexes := range colors {
-		if radius != "000" && radius != "120" && radius != "240" {
+    if _, ok := placement[radius]; ok {
 			sem <- true
 			go func(r string, h string) {
 				defer func() { <-sem }()
