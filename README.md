@@ -2,7 +2,7 @@
 
 Create simple warhol-like artworks from digital images.
 
-![Obi Warhol](http://www.flickr.com/photos/atongen/12142776306/ =400x400)
+![Obi Warhol](obi-warhol2-small.jpg)
 
 ## Installation
 
