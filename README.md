@@ -2,6 +2,8 @@
 
 Create simple warhol-like artworks from digital images.
 
+![Obi Warhol](http://www.flickr.com/photos/atongen/12142776306/ =400x400)
+
 ## Installation
 
 $ go get github.com/atongen/warhol
