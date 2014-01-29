@@ -148,6 +148,9 @@ func init() {
 }
 
 func main() {
+	concurrency := runtime.NumCPU()
+	runtime.GOMAXPROCS(concurrency)
+
 	processArgs()
 
 	var err error
@@ -158,7 +161,6 @@ func main() {
 	bounds = (*m).Bounds()
 	setPlacement()
 
-	concurrency := runtime.NumCPU()
 	sem := make(chan bool, concurrency)
 
 	for radius, hexes := range colors {
