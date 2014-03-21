@@ -22,6 +22,8 @@ var (
 	filename string
 	outdir   string
 	size     int
+	palette  string
+	custom   string
 )
 
 func writeWarholPartial(labs []*LAB, radius string) {
@@ -130,6 +132,25 @@ func processArgs() {
 	if size != 0 && size != 2 && size != 3 {
 		usage()
 	}
+
+	// colors
+	if custom != "" {
+		colors = make(Colors)
+		colors["000"] = custom
+		size = 0
+	} else {
+		switch palette {
+		default:
+			usage()
+		case "low":
+			colors = colorsLow
+		case "high":
+			colors = colorsHigh
+		case "deep":
+			colors = colorsDeep
+			size = 0
+		}
+	}
 }
 
 func usage() {
@@ -141,10 +162,10 @@ func usage() {
 }
 
 func init() {
-	flag.StringVar(&outdir, "outdir", ".", "Output directory")
-	flag.StringVar(&outdir, "o", ".", "outdir (shorthand)")
-	flag.IntVar(&size, "size", 3, "Size of output grid, valid values are 3 (3x3), 2 (2x2), or 0 (do not assemble final image)")
-	flag.IntVar(&size, "s", 3, "size (shorthand)")
+	flag.StringVar(&outdir, "o", ".", "Output directory")
+	flag.IntVar(&size, "s", 3, "Size of output grid, valid values are 3 (3x3), 2 (2x2), or 0 (do not assemble final image)")
+	flag.StringVar(&palette, "p", "low", "Select color set, options: low, high, deep")
+	flag.StringVar(&custom, "c", "", "Use custom color set, CSV of hex values.")
 }
 
 func main() {
