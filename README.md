@@ -14,10 +14,10 @@ $ go get github.com/atongen/warhol
 $ warhol [OPTIONS] path/to/image.jpg
 
 Options:
-  -o=".": outdir (shorthand)
-  -outdir=".": Output directory
-  -s=3: size (shorthand)
-  -size=3: Size of output grid, valid values are 3 (3x3), 2 (2x2), or 0 (do not assemble final image)
+  -c="": Use custom color set, CSV of hex values.
+  -o=".": Output directory
+  -p="low": Select color set, options: low, high, deep
+  -s=3: Size of output grid, valid values are 3 (3x3), 2 (2x2), or 0 (do not assemble final image)
 ```
 
 ## Contributing
