@@ -28,7 +28,6 @@ func writeImage(outf string, img *image.RGBA64) {
 	defer out.Close()
 	options := &jpeg.Options{Quality: 92}
 	jpeg.Encode(out, img, options)
-	//fmt.Println(outf)
 }
 
 func getImageFilename(indicator string) string {
