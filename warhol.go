@@ -24,11 +24,11 @@ var (
 	size     int
 	palette  string
 	custom   string
-  list     bool
-  help     bool
-  verbose  bool
-  version  bool
-  workers  int
+	list     bool
+	help     bool
+	verbose  bool
+	version  bool
+	workers  int
 )
 
 func writeWarholPartial(labs []*LAB, radius string) {
@@ -117,14 +117,14 @@ func processArgs() {
 	var err error
 	flag.Parse()
 
-  if list {
-    listPalettes()
-  } else if version {
-    fmt.Println(ver)
-    os.Exit(0)
-  } else if help {
-    usage(0)
-  }
+	if list {
+		listPalettes()
+	} else if version {
+		fmt.Println(ver)
+		os.Exit(0)
+	} else if help {
+		usage(0)
+	}
 
 	// filepath
 	if len(flag.Args()) != 1 {
@@ -153,12 +153,12 @@ func processArgs() {
 		colors["000"] = custom
 		size = 0
 	} else {
-    var ok bool
-    colors, ok = palettes[palette]
-    if !ok {
-      usage(1)
-    }
-  }
+		var ok bool
+		colors, ok = palettes[palette]
+		if !ok {
+			usage(1)
+		}
+	}
 }
 
 func usage(status int) {
@@ -170,23 +170,23 @@ func usage(status int) {
 }
 
 func listPalettes() {
-  fmt.Println("Palettes:")
-  for key, _ := range palettes {
-    fmt.Println(key)
-  }
-  os.Exit(1)
+	fmt.Println("Palettes:")
+	for key, _ := range palettes {
+		fmt.Println(key)
+	}
+	os.Exit(1)
 }
 
 func init() {
 	flag.StringVar(&outdir, "o", ".", "Output directory")
 	flag.IntVar(&size, "s", 3, "Size of output grid, valid values are 3 (3x3), 2 (2x2), or 0 (do not assemble final image)")
 	flag.StringVar(&palette, "p", "high", "Select color palette")
-  flag.BoolVar(&list, "l", false, "Print color palettes and exit")
-  flag.BoolVar(&help, "h", false, "Print help and exit")
+	flag.BoolVar(&list, "l", false, "Print color palettes and exit")
+	flag.BoolVar(&help, "h", false, "Print help and exit")
 	flag.StringVar(&custom, "c", "", "Use custom color set, CSV of hex values")
-  flag.BoolVar(&verbose, "v", false, "Verbose output")
-  flag.BoolVar(&version, "version", false, "Print version and exit")
-  flag.IntVar(&workers, "w", runtime.NumCPU(), "Number of workers for processing")
+	flag.BoolVar(&verbose, "v", false, "Verbose output")
+	flag.BoolVar(&version, "version", false, "Print version and exit")
+	flag.IntVar(&workers, "w", runtime.NumCPU(), "Number of workers for processing")
 }
 
 func main() {
@@ -203,9 +203,9 @@ func main() {
 	runtime.GOMAXPROCS(workers)
 	sem := make(chan bool, workers)
 
-  if verbose {
-    fmt.Println("Processing image with", workers, "workers")
-  }
+	if verbose {
+		fmt.Println("Processing image with", workers, "workers")
+	}
 
 	for radius, hexes := range colors {
 		if _, ok := placement[radius]; ok {
