@@ -1,15 +1,17 @@
 package main
 
 import (
-	"code.google.com/p/chroma/f64/colorspace"
-	"code.google.com/p/chroma/f64/delta"
 	"fmt"
 	"image/color"
+	"math"
 	"strings"
+
+	colorful "github.com/lucasb-eyer/go-colorful"
 )
 
 type LAB struct {
 	l, a, b float64
+	color   colorful.Color
 }
 
 const (
@@ -22,7 +24,11 @@ func (lab *LAB) String() string {
 }
 
 func (lab1 *LAB) dist(lab2 *LAB) float64 {
-	return delta.DeltaE(lab1.l, lab1.a, lab1.b, lab2.l, lab2.a, lab2.b)
+	return math.Sqrt(sq(lab1.l-lab2.l) + sq(lab1.a-lab2.a) + sq(lab1.b-lab2.b))
+}
+
+func sq(v float64) float64 {
+	return v * v
 }
 
 func (lab *LAB) minDist(labs []*LAB) *LAB {
@@ -38,19 +44,15 @@ func (lab *LAB) minDist(labs []*LAB) *LAB {
 	return min
 }
 
-func (lab *LAB) inverse() *LAB {
-	return &LAB{l: maxL - lab.l, a: lab.a, b: lab.b}
-}
-
-func (lab *LAB) toRGBA() *color.RGBA64 {
-	r, g, b := colorspace.LabToRGB(lab.l, lab.a, lab.b)
-	return &color.RGBA64{uint16(r), uint16(g), uint16(b), uint16(65535)}
+func (lab *LAB) toRGBA() *color.RGBA {
+	r, g, b := lab.color.RGB255()
+	return &color.RGBA{r, g, b, uint8(0)}
 }
 
 func hexToLab(hex string) *LAB {
-	r, g, b := HexToRGB(Hex(hex))
-	l, a, bb := colorspace.RGBToLab(float64(uint16(r)*256.0), float64(uint16(g)*256.0), float64(uint(b)*256.0))
-	return &LAB{l, a, bb}
+	myColor, _ := colorful.Hex(hex)
+	l, a, bb := myColor.Lab()
+	return &LAB{l, a, bb, myColor}
 }
 
 // Get a list of LAB colors based on comma separated hex values
@@ -65,6 +67,7 @@ func hexesToLabs(hexes string) []*LAB {
 
 func rgbaToLab(color color.Color) *LAB {
 	r, g, b, _ := color.RGBA()
-	l, a, bb := colorspace.RGBToLab(float64(r), float64(g), float64(b))
-	return &LAB{l, a, bb}
+	myColor := colorful.Color{R: float64(r) / 65535.0, G: float64(g) / 65535.0, B: float64(b) / 65535.0}
+	l, a, bb := myColor.Lab()
+	return &LAB{l, a, bb, myColor}
 }

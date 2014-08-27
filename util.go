@@ -23,7 +23,7 @@ func openImage(path string) (*image.Image, error) {
 	return &img, nil
 }
 
-func writeImage(outf string, img *image.RGBA64) {
+func writeImage(outf string, img *image.RGBA) {
 	out, _ := os.Create(outf)
 	defer out.Close()
 	options := &jpeg.Options{Quality: 92}

@@ -32,12 +32,12 @@ var (
 )
 
 func writeWarholPartial(labs []*LAB, radius string) {
-	img := image.NewRGBA64(image.Rect(0, 0, bounds.Max.X, bounds.Max.Y))
+	img := image.NewRGBA(image.Rect(0, 0, bounds.Max.X, bounds.Max.Y))
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			lab := rgbaToLab((*m).At(x, y))
 			nLab := lab.minDist(labs)
-			img.SetRGBA64(x, y, *nLab.toRGBA())
+			img.SetRGBA(x, y, *nLab.toRGBA())
 		}
 	}
 
@@ -50,7 +50,7 @@ func writeWarholPartial(labs []*LAB, radius string) {
 }
 
 func writeWarhol() {
-	img := image.NewRGBA64(image.Rect(0, 0, bounds.Max.X*size, bounds.Max.Y*size))
+	img := image.NewRGBA(image.Rect(0, 0, bounds.Max.X*size, bounds.Max.Y*size))
 
 	for radius, rect := range placement {
 		sub, err := openImage(result[radius])
