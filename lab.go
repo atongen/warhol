@@ -16,7 +16,8 @@ type LAB struct {
 
 const (
 	// Max l value
-	maxL = float64(792537.7695198755)
+	//maxL = float64(792537.7695198755)
+	maxL = float64(1.0)
 )
 
 func (lab *LAB) String() string {
@@ -67,7 +68,7 @@ func hexesToLabs(hexes string) []*LAB {
 
 func rgbaToLab(color color.Color) *LAB {
 	r, g, b, _ := color.RGBA()
-	myColor := colorful.Color{R: float64(r) / 65535.0, G: float64(g) / 65535.0, B: float64(b) / 65535.0}
+	myColor := colorful.Color{R: float64(r) / 255.0, G: float64(g) / 255.0, B: float64(b) / 255.0}
 	l, a, bb := myColor.Lab()
 	return &LAB{l, a, bb, myColor}
 }
