@@ -16,7 +16,6 @@ type LAB struct {
 
 const (
 	// Max l value
-	//maxL = float64(792537.7695198755)
 	maxL = float64(1.0)
 )
 
@@ -50,25 +49,32 @@ func (lab *LAB) toRGBA() *color.RGBA {
 	return &color.RGBA{r, g, b, uint8(0)}
 }
 
-func hexToLab(hex string) *LAB {
-	myColor, _ := colorful.Hex(hex)
+func hexToLab(hex string) (*LAB, error) {
+	myColor, err := colorful.Hex("#" + strings.ToLower(hex))
+	if err != nil {
+		return nil, err
+	}
 	l, a, bb := myColor.Lab()
-	return &LAB{l, a, bb, myColor}
+	return &LAB{l, a, bb, myColor}, nil
 }
 
 // Get a list of LAB colors based on comma separated hex values
-func hexesToLabs(hexes string) []*LAB {
+func hexesToLabs(hexes string) ([]*LAB, error) {
 	hexesl := strings.Split(hexes, ",")
 	var labs = make([]*LAB, len(hexesl))
+	var err error
 	for idx, hex := range hexesl {
-		labs[idx] = hexToLab(hex)
+		labs[idx], err = hexToLab(hex)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return labs
+	return labs, nil
 }
 
 func rgbaToLab(color color.Color) *LAB {
 	r, g, b, _ := color.RGBA()
-	myColor := colorful.Color{R: float64(r) / 255.0, G: float64(g) / 255.0, B: float64(b) / 255.0}
+	myColor := colorful.Color{R: float64(r) / 65535.0, G: float64(g) / 65535.0, B: float64(b) / 65535.0}
 	l, a, bb := myColor.Lab()
 	return &LAB{l, a, bb, myColor}
 }

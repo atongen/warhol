@@ -195,7 +195,7 @@ func main() {
 	var err error
 	m, err = openImage(filename)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 	bounds = (*m).Bounds()
 	setPlacement()
@@ -212,7 +212,10 @@ func main() {
 			sem <- true
 			go func(r string, h string) {
 				defer func() { <-sem }()
-				labs := hexesToLabs(h)
+				labs, err := hexesToLabs(h)
+				if err != nil {
+					log.Fatalln(err)
+				}
 				writeWarholPartial(labs, r)
 			}(radius, hexes)
 		}
