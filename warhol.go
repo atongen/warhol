@@ -200,7 +200,6 @@ func main() {
 	bounds = (*m).Bounds()
 	setPlacement()
 
-	runtime.GOMAXPROCS(workers)
 	sem := make(chan bool, workers)
 
 	if verbose {
