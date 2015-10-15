@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/jpeg"
 	"os"
-	"path"
 	"path/filepath"
 )
 
@@ -30,9 +29,8 @@ func writeImage(outf string, img *image.RGBA) {
 	jpeg.Encode(out, img, options)
 }
 
-func getImageFilename(indicator string) string {
-	fn := path.Base(filename)
-	extension := filepath.Ext(fn)
-	name := fn[0 : len(fn)-len(extension)]
-	return path.Join(outdir, name+"-"+indicator+extension)
+func fileSuffix(filename string, suffix string) string {
+	ext := filepath.Ext(filename)
+	base := filename[0 : len(filename)-len(ext)]
+	return base + suffix + ext
 }
