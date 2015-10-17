@@ -14,6 +14,12 @@ type LAB struct {
 	color   colorful.Color
 }
 
+func newLab(l, a, b float64) *LAB {
+	return &LAB{
+		l, a, b, colorful.Lab(l, a, b).Clamped(),
+	}
+}
+
 func (lab *LAB) String() string {
 	return fmt.Sprintf("(%f,%f,%f)", lab.l, lab.a, lab.b)
 }

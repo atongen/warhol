@@ -42,12 +42,13 @@ const (
 	noneType ImageType = ""
 )
 
-func writeWarholPartial(labs []*LAB, i int) error {
+func writeWarholPartial(labs []*LAB, i int, slope, b float64) error {
 	img := image.NewRGBA(image.Rect(0, 0, bounds.Max.X, bounds.Max.Y))
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			lab := rgbaToLab((*m).At(x, y))
-			nLab := lab.minDist(labs)
+			stretched := newLab(getNewL(lab.l, slope, b), lab.a, lab.b)
+			nLab := stretched.minDist(labs)
 			img.SetRGBA(x, y, *nLab.toRGBA())
 		}
 	}
@@ -69,6 +70,35 @@ func writeWarhol() error {
 	}
 
 	return writeImage(outfile, img)
+}
+
+func getMinMaxL() (min, max float64) {
+	min = float64(1.0)
+	max = float64(0.0)
+
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			lab := rgbaToLab((*m).At(x, y))
+			if lab.l < min {
+				min = lab.l
+			}
+			if lab.l > max {
+				max = lab.l
+			}
+		}
+	}
+
+	return
+}
+
+func calcStretchEqn(min, max float64) (slope, b float64) {
+	b = float64(-1.0) / (max/min + float64(1.0))
+	slope = -b / min
+	return
+}
+
+func getNewL(l, slope, b float64) float64 {
+	return l*slope + b
 }
 
 func buildPlacement(n int) []image.Rectangle {
@@ -183,6 +213,9 @@ func main() {
 	placement = buildPlacement(size)
 	defer cleanUp()
 
+	min, max := getMinMaxL()
+	slope, b := calcStretchEqn(min, max)
+
 	sem := make(chan bool, workers)
 
 	for i, _ := range placement {
@@ -190,7 +223,7 @@ func main() {
 		go func(j int, s int) {
 			defer func() { <-sem }()
 			labs := getLabs(j, s, 8)
-			err := writeWarholPartial(labs, j)
+			err := writeWarholPartial(labs, j, slope, b)
 			if err != nil {
 				log.Println(err)
 			}
