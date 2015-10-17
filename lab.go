@@ -14,11 +14,6 @@ type LAB struct {
 	color   colorful.Color
 }
 
-const (
-	// Max l value
-	maxL = float64(1.0)
-)
-
 func (lab *LAB) String() string {
 	return fmt.Sprintf("(%f,%f,%f)", lab.l, lab.a, lab.b)
 }
@@ -46,7 +41,7 @@ func (lab *LAB) minDist(labs []*LAB) *LAB {
 
 func (lab *LAB) toRGBA() *color.RGBA {
 	r, g, b := lab.color.RGB255()
-	return &color.RGBA{r, g, b, uint8(0)}
+	return &color.RGBA{r, g, b, uint8(255)}
 }
 
 func hexToLab(hex string) (*LAB, error) {

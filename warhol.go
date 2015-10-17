@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"image"
@@ -20,6 +21,7 @@ var (
 	m         *image.Image
 	bounds    image.Rectangle
 	placement []image.Rectangle
+	imgType   ImageType
 	result    = map[int]string{}
 
 	// flags
@@ -32,7 +34,15 @@ var (
 	workers int
 )
 
-func writeWarholPartial(labs []*LAB, i int) {
+type ImageType string
+
+const (
+	jpgType  ImageType = ".jpg"
+	pngType  ImageType = ".png"
+	noneType ImageType = ""
+)
+
+func writeWarholPartial(labs []*LAB, i int) error {
 	img := image.NewRGBA(image.Rect(0, 0, bounds.Max.X, bounds.Max.Y))
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
@@ -42,24 +52,23 @@ func writeWarholPartial(labs []*LAB, i int) {
 		}
 	}
 
-	outf := filepath.Join(tmpdir, strconv.Itoa(i)+".jpg")
+	outf := filepath.Join(tmpdir, strconv.Itoa(i)+string(imgType))
 	result[i] = outf
-	writeImage(outf, img)
+	return writeImage(outf, img)
 }
 
-func writeWarhol() {
+func writeWarhol() error {
 	img := image.NewRGBA(image.Rect(0, 0, bounds.Max.X*size, bounds.Max.Y*size))
 
 	for i, rect := range placement {
 		sub, err := openImage(result[i])
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 		draw.Draw(img, rect, *sub, image.ZP, draw.Src)
 	}
 
-	writeImage(outfile, img)
-	fmt.Println(outfile)
+	return writeImage(outfile, img)
 }
 
 func buildPlacement(n int) []image.Rectangle {
@@ -74,9 +83,15 @@ func buildPlacement(n int) []image.Rectangle {
 	return result
 }
 
-func isJpg(filename string) bool {
+func getImageType(filename string) (ImageType, error) {
 	ext := strings.ToLower(filepath.Ext(filename))
-	return ext == ".jpg" || ext == ".jpeg"
+	if ext == ".jpg" || ext == ".jpeg" {
+		return jpgType, nil
+	} else if ext == ".png" {
+		return pngType, nil
+	} else {
+		return noneType, errors.New("Unknown image type: " + ext)
+	}
 }
 
 func cleanUp() {
@@ -107,7 +122,10 @@ func processArgs() {
 		usage(1)
 	}
 	infile = filepath.Clean(infile)
-	if !isJpg(infile) {
+
+	// imgType
+	imgType, err = getImageType(infile)
+	if err != nil {
 		usage(1)
 	}
 
@@ -136,7 +154,7 @@ func processArgs() {
 }
 
 func usage(status int) {
-	fmt.Println("$ warhol [OPTIONS] path/to/image.jpg")
+	fmt.Println("$ warhol [OPTIONS] path/to/image.(jpg|png)")
 	fmt.Println()
 	fmt.Println("Options:")
 	flag.PrintDefaults()
@@ -144,6 +162,8 @@ func usage(status int) {
 }
 
 func init() {
+	rand.Seed(time.Now().Unix())
+
 	flag.StringVar(&outfile, "o", "", "Output file")
 	flag.IntVar(&size, "s", 3, "nxn size of output grid, ie. 2x2, 3x3, etc.")
 	flag.BoolVar(&help, "h", false, "Print help and exit")
@@ -164,19 +184,25 @@ func main() {
 	defer cleanUp()
 
 	sem := make(chan bool, workers)
-	rand.Seed(time.Now().Unix())
 
 	for i, _ := range placement {
 		sem <- true
 		go func(j int, s int) {
 			defer func() { <-sem }()
 			labs := getLabs(j, s, 8)
-			writeWarholPartial(labs, j)
+			err := writeWarholPartial(labs, j)
+			if err != nil {
+				log.Println(err)
+			}
 		}(i, size)
 	}
 	for i := 0; i < cap(sem); i++ {
 		sem <- true
 	}
 
-	writeWarhol()
+	err = writeWarhol()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Println(outfile)
 }
