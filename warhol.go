@@ -11,7 +11,6 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -31,7 +30,7 @@ var (
 	size    int
 	help    bool
 	version bool
-	workers int
+	hue     int
 )
 
 type ImageType string
@@ -170,6 +169,13 @@ func processArgs() {
 		usage(1)
 	}
 
+	// hue
+	if hue == -1 {
+		hue = rand.Intn(360)
+	} else if hue < 0 || hue >= 360 {
+		usage(1)
+	}
+
 	// outfile
 	if outfile == "" {
 		outfile = fileSuffix(infile, "-warhol"+strconv.Itoa(size))
@@ -196,9 +202,9 @@ func init() {
 
 	flag.StringVar(&outfile, "o", "", "Output file")
 	flag.IntVar(&size, "s", 3, "nxn size of output grid, ie. 2x2, 3x3, etc.")
+	flag.IntVar(&hue, "hue", -1, "starting hue 0-359, default is random")
 	flag.BoolVar(&help, "h", false, "Print help and exit")
 	flag.BoolVar(&version, "v", false, "Print version and exit")
-	flag.IntVar(&workers, "w", runtime.NumCPU(), "Number of workers for processing")
 }
 
 func main() {
@@ -211,28 +217,34 @@ func main() {
 	}
 	bounds = (*m).Bounds()
 	placement = buildPlacement(size)
+	num := len(placement)
+	r := 360 / num
 	defer cleanUp()
 
+	log.Println("Stretching contrast")
 	min, max := getMinMaxL()
 	slope, b := calcStretchEqn(min, max)
 
-	sem := make(chan bool, workers)
+	sem := make(chan bool, num)
 
+	log.Println("Building partial images")
 	for i, _ := range placement {
 		sem <- true
-		go func(j int, s int) {
+		myHue := (hue + (r * i)) % 360
+		go func(h, j int) {
 			defer func() { <-sem }()
-			labs := getLabs(j, s, 8)
+			labs := getLabs(h, 8)
 			err := writeWarholPartial(labs, j, slope, b)
 			if err != nil {
 				log.Println(err)
 			}
-		}(i, size)
+		}(myHue, i)
 	}
 	for i := 0; i < cap(sem); i++ {
 		sem <- true
 	}
 
+	log.Println("Writing final image")
 	err = writeWarhol()
 	if err != nil {
 		log.Fatalln(err)
