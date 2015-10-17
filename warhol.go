@@ -62,27 +62,16 @@ func writeWarhol() {
 	fmt.Println(outfile)
 }
 
-func setPlacement() {
-	if size == 2 {
-		placement = []image.Rectangle{
-			image.Rect(0, 0, bounds.Max.X, bounds.Max.Y),
-			image.Rect(bounds.Max.X, 0, bounds.Max.X*2, bounds.Max.Y),
-			image.Rect(0, bounds.Max.Y, bounds.Max.X, bounds.Max.Y*2),
-			image.Rect(bounds.Max.X, bounds.Max.Y, bounds.Max.X*2, bounds.Max.Y*2),
-		}
-	} else if size == 3 {
-		placement = []image.Rectangle{
-			image.Rect(0, 0, bounds.Max.X, bounds.Max.Y),
-			image.Rect(bounds.Max.X, 0, bounds.Max.X*2, bounds.Max.Y),
-			image.Rect(bounds.Max.X*2, 0, bounds.Max.X*3, bounds.Max.Y),
-			image.Rect(0, bounds.Max.Y, bounds.Max.X, bounds.Max.Y*2),
-			image.Rect(bounds.Max.X, bounds.Max.Y, bounds.Max.X*2, bounds.Max.Y*2),
-			image.Rect(bounds.Max.X*2, bounds.Max.Y, bounds.Max.X*3, bounds.Max.Y*3),
-			image.Rect(0, bounds.Max.Y*2, bounds.Max.X, bounds.Max.Y*3),
-			image.Rect(bounds.Max.X, bounds.Max.Y*2, bounds.Max.X*2, bounds.Max.Y*3),
-			image.Rect(bounds.Max.X*2, bounds.Max.Y*2, bounds.Max.X*3, bounds.Max.Y*3),
+func buildPlacement(n int) []image.Rectangle {
+	result := make([]image.Rectangle, n*n)
+	x := bounds.Max.X
+	y := bounds.Max.Y
+	for i := 0; i < n; i++ {
+		for j := 0; j < n; j++ {
+			result[i*n+j] = image.Rect(i*x, j*y, (i+1)*x, (j+1)*y)
 		}
 	}
+	return result
 }
 
 func isJpg(filename string) bool {
@@ -94,6 +83,7 @@ func cleanUp() {
 	_, err := os.Stat(tmpdir)
 	if err == nil {
 		os.RemoveAll(tmpdir)
+		os.Remove(tmpdir)
 	}
 }
 
@@ -128,7 +118,7 @@ func processArgs() {
 	}
 
 	// size
-	if size != 2 && size != 3 {
+	if size < 1 {
 		usage(1)
 	}
 
@@ -155,7 +145,7 @@ func usage(status int) {
 
 func init() {
 	flag.StringVar(&outfile, "o", "", "Output file")
-	flag.IntVar(&size, "s", 3, "Size of output grid, valid values are 3 (3x3), 2 (2x2)")
+	flag.IntVar(&size, "s", 3, "nxn size of output grid, ie. 2x2, 3x3, etc.")
 	flag.BoolVar(&help, "h", false, "Print help and exit")
 	flag.BoolVar(&version, "v", false, "Print version and exit")
 	flag.IntVar(&workers, "w", runtime.NumCPU(), "Number of workers for processing")
@@ -170,7 +160,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	bounds = (*m).Bounds()
-	setPlacement()
+	placement = buildPlacement(size)
 	defer cleanUp()
 
 	sem := make(chan bool, workers)
