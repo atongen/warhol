@@ -1,31 +1,38 @@
 package main
 
-import (
-	"math/rand"
+import colorful "github.com/lucasb-eyer/go-colorful"
 
-	colorful "github.com/lucasb-eyer/go-colorful"
-)
-
-func getLabs(hue, num int) []*LAB {
+func getLabs(hue, numHues, numShadesRoot int) []*LAB {
 	// rotate starting hue for each image,
-	// get complimentary hues just opposite starting hue
-	hues := make([]int, 3)
-	hues[0] = hue
-	hues[1] = (hues[0] + 180 + 15) % 360
-	hues[2] = (hues[0] + 180 - 15) % 360
+	// get complimentary hue opposite starting hue
+	hue = hue % 360
+	portion := 360 / numHues
+	hues := make([]int, numHues)
+	for i := 0; i < numHues; i++ {
+		hues[i] = (hue + (portion * i)) % 360
+	}
+
+	numShades := numShadesRoot * numShadesRoot
 
 	// generate num shades of each hue
-	result := make([]*LAB, 3*num)
-	for j, hue := range hues {
-		for k := 0; k < num; k++ {
-			result[j*num+k] = getLabFromHcl(float64(hue), randFloat(0.35, 0.65), randFloat(0.35, 0.65))
+	result := make([]*LAB, numHues*numShades)
+	for i, h := range hues {
+		for j := 0; j < numShadesRoot; j++ {
+			for k := 0; k < numShadesRoot; k++ {
+				x, y := floatGrid(j, k, numShadesRoot)
+				result[i*numShades+j*numShadesRoot+k] = getLabFromHcl(float64(h), x, y)
+			}
 		}
 	}
 	return result
 }
 
-func randFloat(min, max float64) float64 {
-	return rand.Float64()*(max-min) + min
+func floatGrid(j, k, n int) (x, y float64) {
+	pad := float64(0.25)
+	size := (float64(1.0) - pad*float64(2.0)) / float64(n)
+	x = pad + float64(j)*size + (size / float64(2.0))
+	y = pad + float64(k)*size + (size / float64(2.0))
+	return
 }
 
 func getLabFromHcl(h, c, l float64) *LAB {

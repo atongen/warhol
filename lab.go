@@ -28,6 +28,18 @@ func (lab1 *LAB) dist(lab2 *LAB) float64 {
 	return math.Sqrt(sq(lab1.l-lab2.l) + sq(lab1.a-lab2.a) + sq(lab1.b-lab2.b))
 }
 
+func (lab *LAB) hex() string {
+	return lab.color.Hex()
+}
+
+func labsHexes(labs []*LAB) string {
+	hexes := make([]string, len(labs))
+	for i, l := range labs {
+		hexes[i] = l.hex()
+	}
+	return strings.Join(hexes, ", ")
+}
+
 func sq(v float64) float64 {
 	return v * v
 }

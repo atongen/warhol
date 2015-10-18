@@ -24,13 +24,15 @@ var (
 	result    = map[int]string{}
 
 	// flags
-	infile  string
-	outfile string
-	tmpdir  string
-	size    int
-	help    bool
-	version bool
-	hue     int
+	infile    string
+	outfile   string
+	tmpdir    string
+	size      int
+	help      bool
+	version   bool
+	hue       int
+	quiet     bool
+	noStretch bool
 )
 
 type ImageType string
@@ -144,10 +146,12 @@ func processArgs() {
 
 	// filepath
 	if len(flag.Args()) != 1 {
+		log.Println("Please specify infile")
 		usage(1)
 	}
 	infile, err = filepath.Abs(flag.Args()[0])
 	if err != nil {
+		log.Println("Infile not found", err)
 		usage(1)
 	}
 	infile = filepath.Clean(infile)
@@ -155,17 +159,20 @@ func processArgs() {
 	// imgType
 	imgType, err = getImageType(infile)
 	if err != nil {
+		log.Println("Unknown infile type")
 		usage(1)
 	}
 
 	// tmpdir
 	tmpdir, err = ioutil.TempDir("", "warhol")
 	if err != nil {
-		log.Fatalln("Could not create temporary directory")
+		log.Println("Could not create temporary directory")
+		usage(1)
 	}
 
 	// size
-	if size < 1 {
+	if size <= 0 {
+		log.Println("Size must be 1 or greater")
 		usage(1)
 	}
 
@@ -173,6 +180,7 @@ func processArgs() {
 	if hue == -1 {
 		hue = rand.Intn(360)
 	} else if hue < 0 || hue >= 360 {
+		log.Println("Hue must be between 0 and 360")
 		usage(1)
 	}
 
@@ -182,9 +190,11 @@ func processArgs() {
 	}
 	outdir, err := os.Stat(filepath.Dir(outfile))
 	if err != nil {
+		log.Println("Error locating outfile")
 		usage(1)
 	}
 	if !outdir.IsDir() {
+		log.Println("Error locating outdir")
 		usage(1)
 	}
 }
@@ -203,8 +213,16 @@ func init() {
 	flag.StringVar(&outfile, "o", "", "Output file")
 	flag.IntVar(&size, "s", 3, "nxn size of output grid, ie. 2x2, 3x3, etc.")
 	flag.IntVar(&hue, "hue", -1, "starting hue 0-359, default is random")
+	flag.BoolVar(&noStretch, "no-stretch", false, "skip stretching contrast of original image")
 	flag.BoolVar(&help, "h", false, "Print help and exit")
 	flag.BoolVar(&version, "v", false, "Print version and exit")
+	flag.BoolVar(&quiet, "quiet", false, "Quiet mode")
+}
+
+func say(str string) {
+	if !quiet {
+		log.Println(str)
+	}
 }
 
 func main() {
@@ -218,22 +236,29 @@ func main() {
 	bounds = (*m).Bounds()
 	placement = buildPlacement(size)
 	num := len(placement)
-	r := 360 / num
+	// rotate around 1/2 the hue circle since we are using complimentary colors
+	r := 180 / num
 	defer cleanUp()
 
-	log.Println("Stretching contrast")
-	min, max := getMinMaxL()
-	slope, b := calcStretchEqn(min, max)
+	var slope, b float64
+	if noStretch {
+		slope = float64(1.0)
+		b = float64(0.0)
+	} else {
+		say("Stretching contrast")
+		min, max := getMinMaxL()
+		slope, b = calcStretchEqn(min, max)
+	}
 
 	sem := make(chan bool, num)
 
-	log.Println("Building partial images")
+	say("Building partial images")
 	for i, _ := range placement {
 		sem <- true
 		myHue := (hue + (r * i)) % 360
 		go func(h, j int) {
 			defer func() { <-sem }()
-			labs := getLabs(h, 8)
+			labs := getLabs(h, 2, 4)
 			err := writeWarholPartial(labs, j, slope, b)
 			if err != nil {
 				log.Println(err)
@@ -244,10 +269,10 @@ func main() {
 		sem <- true
 	}
 
-	log.Println("Writing final image")
+	say("Writing final image")
 	err = writeWarhol()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println(outfile)
+	say(outfile)
 }
