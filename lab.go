@@ -1,28 +1,47 @@
 package main
 
 import (
-	"code.google.com/p/chroma/f64/colorspace"
-	"code.google.com/p/chroma/f64/delta"
 	"fmt"
 	"image/color"
+	"math"
 	"strings"
+
+	colorful "github.com/lucasb-eyer/go-colorful"
 )
 
 type LAB struct {
 	l, a, b float64
+	color   colorful.Color
 }
 
-const (
-	// Max l value
-	maxL = float64(792537.7695198755)
-)
+func newLab(l, a, b float64) *LAB {
+	return &LAB{
+		l, a, b, colorful.Lab(l, a, b).Clamped(),
+	}
+}
 
 func (lab *LAB) String() string {
 	return fmt.Sprintf("(%f,%f,%f)", lab.l, lab.a, lab.b)
 }
 
 func (lab1 *LAB) dist(lab2 *LAB) float64 {
-	return delta.DeltaE(lab1.l, lab1.a, lab1.b, lab2.l, lab2.a, lab2.b)
+	return math.Sqrt(sq(lab1.l-lab2.l) + sq(lab1.a-lab2.a) + sq(lab1.b-lab2.b))
+}
+
+func (lab *LAB) hex() string {
+	return lab.color.Hex()
+}
+
+func labsHexes(labs []*LAB) string {
+	hexes := make([]string, len(labs))
+	for i, l := range labs {
+		hexes[i] = l.hex()
+	}
+	return strings.Join(hexes, ", ")
+}
+
+func sq(v float64) float64 {
+	return v * v
 }
 
 func (lab *LAB) minDist(labs []*LAB) *LAB {
@@ -38,33 +57,37 @@ func (lab *LAB) minDist(labs []*LAB) *LAB {
 	return min
 }
 
-func (lab *LAB) inverse() *LAB {
-	return &LAB{l: maxL - lab.l, a: lab.a, b: lab.b}
+func (lab *LAB) toRGBA() *color.RGBA {
+	r, g, b := lab.color.RGB255()
+	return &color.RGBA{r, g, b, uint8(255)}
 }
 
-func (lab *LAB) toRGBA() *color.RGBA64 {
-	r, g, b := colorspace.LabToRGB(lab.l, lab.a, lab.b)
-	return &color.RGBA64{uint16(r), uint16(g), uint16(b), uint16(65535)}
-}
-
-func hexToLab(hex string) *LAB {
-	r, g, b := HexToRGB(Hex(hex))
-	l, a, bb := colorspace.RGBToLab(float64(uint16(r)*256.0), float64(uint16(g)*256.0), float64(uint(b)*256.0))
-	return &LAB{l, a, bb}
+func hexToLab(hex string) (*LAB, error) {
+	myColor, err := colorful.Hex("#" + strings.ToLower(hex))
+	if err != nil {
+		return nil, err
+	}
+	l, a, bb := myColor.Lab()
+	return &LAB{l, a, bb, myColor}, nil
 }
 
 // Get a list of LAB colors based on comma separated hex values
-func hexesToLabs(hexes string) []*LAB {
+func hexesToLabs(hexes string) ([]*LAB, error) {
 	hexesl := strings.Split(hexes, ",")
 	var labs = make([]*LAB, len(hexesl))
+	var err error
 	for idx, hex := range hexesl {
-		labs[idx] = hexToLab(hex)
+		labs[idx], err = hexToLab(hex)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return labs
+	return labs, nil
 }
 
 func rgbaToLab(color color.Color) *LAB {
 	r, g, b, _ := color.RGBA()
-	l, a, bb := colorspace.RGBToLab(float64(r), float64(g), float64(b))
-	return &LAB{l, a, bb}
+	myColor := colorful.Color{R: float64(r) / 65535.0, G: float64(g) / 65535.0, B: float64(b) / 65535.0}
+	l, a, bb := myColor.Lab()
+	return &LAB{l, a, bb, myColor}
 }

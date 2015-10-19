@@ -1,10 +1,11 @@
 package main
 
 import (
+	"errors"
 	"image"
 	"image/jpeg"
+	"image/png"
 	"os"
-	"path"
 	"path/filepath"
 )
 
@@ -23,16 +24,36 @@ func openImage(path string) (*image.Image, error) {
 	return &img, nil
 }
 
-func writeImage(outf string, img *image.RGBA64) {
-	out, _ := os.Create(outf)
-	defer out.Close()
-	options := &jpeg.Options{Quality: 92}
-	jpeg.Encode(out, img, options)
+func writeImage(outf string, img *image.RGBA) error {
+	if imgType == jpgType {
+		return writeJpgImage(outf, img)
+	} else if imgType == pngType {
+		return writePngImage(outf, img)
+	} else {
+		return errors.New("image type not specified")
+	}
 }
 
-func getImageFilename(indicator string) string {
-	fn := path.Base(filename)
-	extension := filepath.Ext(fn)
-	name := fn[0 : len(fn)-len(extension)]
-	return path.Join(outdir, name+"-"+indicator+extension)
+func writeJpgImage(outf string, img *image.RGBA) error {
+	out, err := os.Create(outf)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	options := &jpeg.Options{Quality: 92}
+	return jpeg.Encode(out, img, options)
+}
+
+func writePngImage(outf string, img *image.RGBA) error {
+	out, err := os.Create(outf)
+	if err != nil {
+		return err
+	}
+	return png.Encode(out, img)
+}
+
+func fileSuffix(filename string, suffix string) string {
+	ext := filepath.Ext(filename)
+	base := filename[0 : len(filename)-len(ext)]
+	return base + suffix + ext
 }
