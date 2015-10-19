@@ -1,28 +1,35 @@
 # warhol
 
-Create simple warhol-like artworks from digital images.
+Create simple warhol-like artworks from jpg or png images.
 
-![Obi Warhol](obi-warhol2-small.jpg)
+This is a small side project that I used to experiment with color spaces (LAB),
+and color comparison algorithms.
+
+![Obi Warhol](obi-warhol2.jpg)
 
 ## Installation
 
+$ go get github.com/lucasb-eyer/go-colorful
 $ go get github.com/atongen/warhol
 
 ## Usage
 
 ```
-$ warhol [OPTIONS] path/to/image.jpg
+$ warhol [OPTIONS] path/to/image.(jpg|png)
 
 Options:
-  -c="": Use custom color set, CSV of hex values
-  -h=false: Print help and exit
-  -l=false: Print color palettes and exit
-  -o=".": Output directory
-  -p="high": Select color palette
-  -s=3: Size of output grid, valid values are 3 (3x3), 2 (2x2), or 0 (do not assemble final image)
-  -v=false: Verbose output
-  -version=false: Print version and exit
-  -w=8: Number of workers for processing
+  -h    Print help and exit
+  -hue int
+        starting hue 0-359, default is random (default -1)
+  -no-stretch
+        skip stretching contrast of original image
+  -o string
+        Output file
+  -quiet
+        Quiet mode
+  -s int
+        nxn size of output grid, ie. 2x2, 3x3, etc. (default 3)
+  -v    Print version and exit
 ```
 
 ## Contributing
